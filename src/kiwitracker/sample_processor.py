@@ -225,6 +225,14 @@ def index_of(arr: np.array, v):
     return next((idx[0] for idx, val in np.ndenumerate(arr) if val == v), -1)
 
 
+def make_peak_selector (tags_to_analyze, fft_freq_by_indx):
+    def tag_number_from_freq (fmhz):
+        return int((fmhz - 160.12)/0.01)
+    TAG_NUMBER_BY_FFT_INDEX = [tag_number_from_freq (f) for f in fft_freq_by_index]
+    def selector (peaks):
+        return [p for p in peaks if TAG_NUMBER_BY_FFT_INDEX[p] in tags_to_analyze]
+    return selector
+ 
 # kiwitracker --center 160425000 --scan 0 -s 768000 --no-use-gps --loglevel debug -f data/sept24.fc32
 
 # new method according:
@@ -264,6 +272,10 @@ async def process_sample_new(
 
     # Generate array of channel frequencies
     f = (np.fft.fftshift(np.fft.fftfreq(N_fft, 1 / Fs)) + f0) / 1e6
+
+    ## Given a user supplied tag numbers of interest
+    ## make a function to filter on these tags
+    peak_selector = make_peak_selector (pc.channels,f)
 
     # Time tag each sample
     # t = np.arange(pc.num_samples_to_process) / Fs
@@ -360,7 +372,9 @@ async def process_sample_new(
         plt.ylabel("Power dB(counts)")
         plt.show() """
 
-        for channel_idx in p[max_peaks]:
+        channel_idx_list = peak_selector(p[max_peaks])
+
+        for channel_idx in channel_idx_list:
 
             channel_str = f'{f[channel_idx]}'
             channel_no = channel_new(f[channel_idx])
