@@ -69,6 +69,11 @@ class ProcessConfig:
         "disk" - data are from disk
     """
 
+    channel_select_list: str = "28,44,77"
+    """
+        list of tag channel numbers to process
+    """
+
     @property
     def sample_rate(self) -> float:
         return self.sample_config.sample_rate

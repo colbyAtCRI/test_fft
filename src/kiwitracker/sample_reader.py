@@ -99,8 +99,9 @@ def main():
     p.add_argument(
         "-ch",
         "--channels",
-        default=["all"],
-        nargs="+",
+        type=str,
+        default="all",
+        nargs="?",
         dest="channels",
         help="List of channels to process. If 'all' is specified, all channels are processed. (default: %(default)s)",
     )
@@ -185,11 +186,18 @@ def main():
     }
 
     # If argschannels contains one of the known modes, replace it
-    if isinstance(args.channels, list) and len(args.channels) == 1 and isinstance(args.channels[0], str):
-        mode = args.channels[0]
-        args.channels = channel_modes.get(mode, [])
+    #if isinstance(args.channels, list) and len(args.channels) == 1 and isinstance(args.channels[0], str):
+    #    mode = args.channels[0]
+    #    args.channels = channel_modes.get(mode, [])
 
-    # Otherwise, assume it's already a custom list of integers
+    if args.channels == "all":
+        args.channels = str(list(range(100)))[1:-1]
+    elif args.channels == "even":
+        args.channels = str(list(range(2,100,2)))[1:-1]
+    elif args.channels == "odd":
+        args.channels = str(list(range(1,100,2)))[1:-1]
+
+    # Otherwise, assume it's already a custom list of integers (i.e. "23,10,8")
     print(args.channels)
 
 
@@ -238,6 +246,7 @@ def main():
         sample_config=sample_config,
         carrier_freq=args.carrier,
         gps_module=gps_module,
+        channel_select_list=args.channels,
     )
 
     if args.infile is not None:
