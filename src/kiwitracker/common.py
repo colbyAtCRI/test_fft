@@ -13,6 +13,24 @@ SamplesT = npt.NDArray[np.complex128]
 FloatArray = npt.NDArray[np.float64]
 
 
+## parse the -ch switch str into a list of selected channels
+def parse_channels (channels:str) -> list:
+    ret = []
+    try:
+        for rng in [rng.split(':') for rng in channels.split(',')]:
+            nrng = list(map(int,rng))
+            if len(nrng) == 1:
+                ret.append (nrng[0])
+            elif len(nrng) == 2:
+                for n in range(nrng[0],nrng[1]):
+                    ret.append (n)
+            else:
+                for n in range(nrng[0],nrng[1],nrng[2]):
+                    ret.append (n)
+    except:
+        logger.error(f'parse error for -ch {channels} switch')    
+    return ret;
+
 @dataclass
 class SampleConfig:
     sample_rate: float = 1.024e6
@@ -69,7 +87,7 @@ class ProcessConfig:
         "disk" - data are from disk
     """
 
-    channel_select_list: str = "28,44,77"
+    channel_select_list: str = ""
     """
         list of tag channel numbers to process
     """

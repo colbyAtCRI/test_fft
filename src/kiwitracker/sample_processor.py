@@ -16,12 +16,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import signal
 
-from kiwitracker.common import CTResult, FTResult, ProcessConfig, ProcessResult
+from kiwitracker.common import CTResult, FTResult, ProcessConfig, ProcessResult, parse_channels
 from kiwitracker.exceptions import ChickTimerProcessingError
 from kiwitracker.fasttelemetry import FT_DICT
 
 logger = logging.getLogger("KiwiTracker")
-
 
 @lru_cache(maxsize=1)
 def fir() -> np.ndarray:
@@ -226,12 +225,15 @@ def index_of(arr: np.array, v):
 
 
 def make_peak_selector (tags_to_analyze, fft_freq_by_index):
-    def tag_number_from_freq (fmhz):
-        return int((fmhz - 160.12)/0.01)
-    TAG_NUMBER_BY_FFT_INDEX = [tag_number_from_freq (f) for f in fft_freq_by_index]
-    def selector (peaks):
-        return [int(p) for p in peaks if TAG_NUMBER_BY_FFT_INDEX[p] in tags_to_analyze]
-    return selector
+    if not tags_to_analyze:
+        return lambda x : x
+    else:
+        def tag_number_from_freq (fmhz):
+            return int((fmhz - 160.11)/0.01)
+        TAG_NUMBER_BY_FFT_INDEX = [tag_number_from_freq (f) for f in fft_freq_by_index]
+        def selector (peaks):
+            return [int(p) for p in peaks if TAG_NUMBER_BY_FFT_INDEX[p] in tags_to_analyze]
+        return selector
  
 # kiwitracker --center 160425000 --scan 0 -s 768000 --no-use-gps --loglevel debug -f data/sept24.fc32
 
@@ -275,7 +277,8 @@ async def process_sample_new(
 
     ## Given a user supplied tag numbers of interest
     ## make a function to filter on these tags
-    channel_select_list = map(int,pc.channel_select_list.split(","))
+    ## channel_select_list = map(int,pc.channel_select_list.split(","))
+    channel_select_list = parse_channels (pc.channel_select_list)
     peak_selector = make_peak_selector (channel_select_list,f)
 
     # Time tag each sample

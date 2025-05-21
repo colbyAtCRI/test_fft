@@ -16,7 +16,7 @@ from typing import AsyncIterator, Callable
 import numpy as np
 from sqlalchemy.orm import Session
 
-from kiwitracker.common import ProcessConfig, ProcessResult, SampleConfig
+from kiwitracker.common import ProcessConfig, ProcessResult, SampleConfig, parse_channels
 from kiwitracker.db.engine import (construct_db_connection_string,
                                    construct_sqlalchemy_engine,
                                    get_sqlalchemy_engine, migrate_if_needed)
@@ -190,12 +190,29 @@ def main():
     #    mode = args.channels[0]
     #    args.channels = channel_modes.get(mode, [])
 
+    ## Allow a more general syntax
+    ##
+    ## channels = "range"
+    ##          | "range,...,range"
+    ## range    = "channel-number"
+    ##          | "start-number:end-number"
+    ##          | "start-number:end-number:step"
+    ##
+    ## examples: 
+    ##    just chan 26 is `-ch 26`
+    ##    chan 26 33 and 7 is `-ch 26,33,7
+    ##    all odd channels `-ch 1:100:2`
+    ##    chan 26, 33-78, and 83 `-ch 26,33:78,83`
+
     if args.channels == "all":
-        args.channels = str(list(range(100)))[1:-1]
+        args.channels = "0:100"
     elif args.channels == "even":
-        args.channels = str(list(range(2,100,2)))[1:-1]
+        args.channels = "2:100:2"
     elif args.channels == "odd":
-        args.channels = str(list(range(1,100,2)))[1:-1]
+        args.channels = "1:100:2"
+
+    ## run channels through the parser to log errors.
+    parse_channels (args.channels)
 
     # Otherwise, assume it's already a custom list of integers (i.e. "23,10,8")
     print(args.channels)
